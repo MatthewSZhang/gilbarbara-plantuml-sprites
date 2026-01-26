@@ -25,11 +25,12 @@ final SPRITES_DIR = new File('sprites')
 SPRITES_DIR.mkdirs()
 final PNGS_DIR = new File('pngs')
 PNGS_DIR.mkdirs()
-final SPRITES_LISTING = new SpritesListing(new File('sprites-list.md'), PNGS_DIR)
+// final SPRITES_LISTING = new SpritesListing(new File('sprites-list.md'), PNGS_DIR)
 
 def cli = new CliBuilder(usage: "${this.class.getSimpleName()}.groovy [options] <svgs URL>", stopAtNonOption: false, footer: "Usage example: ./${this.class.getSimpleName()}.groovy https://github.com/gilbarbara/logos/tree/master/logos")
 cli.s(longOpt: 'scale', args: 1, argName: 'scale', "Scale (eg: 0.5 to reduce size to half) of generated sprites. Default value: $DEFAULT_SCALE")
 cli.c(longOpt: 'use-cache', "When specified, already downloaded files are not re-downloaded")
+cli.n(longOpt: 'name', args: 1, argName: 'name', "Custom output name (e.g. 'sklearn-icon'). Only valid for single URL.")
 def options = cli.parse(args)
 !options && System.exit(1)
 if (!options.arguments()) {
@@ -43,13 +44,14 @@ if (options.arguments().size() > 1) {
     System.exit(1)
 }
 def svgsUrl = options.arguments()[0]
-def scaleFactor = options.s ?: DEFAULT_SCALE
+def scaleFactor = options.s ? options.s.toBigDecimal() : DEFAULT_SCALE
 def useCache = options.c
+def customName = options.n
 
 GParsPool.withPool {
     listSvgsUrls(svgsUrl)
             .collectParallel {
-                downloadFile(it, TMP_DIR, useCache)
+                downloadFile(it, TMP_DIR, useCache, customName)
             }
             .collectParallel {
                 svg2Png(it, PNGS_DIR)
@@ -64,13 +66,17 @@ GParsPool.withPool {
                 it.getName().replace('.puml', '')
             }
             .toSorted()
-            .each {
-                SPRITES_LISTING.addSprite(it)
-            }
+            // .each {
+            //     SPRITES_LISTING.addSprite(it)
+            // }
 }
-SPRITES_LISTING.addPendingSprites('')
+// SPRITES_LISTING.addPendingSprites('')
 
 static def listSvgsUrls(baseUrl) {
+    if (baseUrl.endsWith(".svg")) {
+        return [baseUrl]
+    }
+
     def matcher = baseUrl =~ /^https:\/\/github.com\/([^\/]+)\/([^\/]+)\/tree\/(.*)$/
     if (!matcher.matches()) {
         throw new IllegalArgumentException("Provided URL is not a GitHub folder URL")
@@ -102,10 +108,10 @@ static def getUrlJson(url) {
             .parseText(new URL(url).text)
 }
 
-static def downloadFile(url, workDir, useCache) {
+static def downloadFile(url, workDir, useCache, customName = null) {
     println("Downloading ${url} ...")
-    def fileName = Paths.get(new URI(url).path).fileName
-    def svgFile = new File("$workDir/${fileName}")
+    def fileNameStr = customName ? "${customName}.svg" : Paths.get(new URI(url).path).fileName.toString()
+    def svgFile = new File("$workDir/${fileNameStr}")
     if (useCache && svgFile.exists()) {
         return svgFile
     }

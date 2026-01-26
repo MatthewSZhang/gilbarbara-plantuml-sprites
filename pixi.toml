@@ -1,0 +1,16 @@
+[workspace]
+name = "plantuml-sprite-generator"
+version = "0.1.0"
+description = "Environment for generating PlantUML sprites from SVGs"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "win-64"]
+
+[dependencies]
+openjdk = "17.*"
+groovy = "4.0.*"
+
+[tasks]
+gen = "groovy svgsFolderUrl2plantUmlSprites.groovy"
+gen-sklearn-icon = "groovy svgsFolderUrl2plantUmlSprites.groovy -n sklearn-icon -s 0.1 https://raw.githubusercontent.com/scikit-learn/scikit-learn/main/doc/logos/scikit-learn-logo-without-subtitle.svg"
+gen-cython-icon = "groovy svgsFolderUrl2plantUmlSprites.groovy -n cython-icon https://raw.githubusercontent.com/cython/cython/master/docs/_static/cython-logo-C.svg"
+gen-scipy = "groovy svgsFolderUrl2plantUmlSprites.groovy -n scipy -s 0.1 https://raw.githubusercontent.com/scipy/scipy.org/main/static/images/logo.svg"
